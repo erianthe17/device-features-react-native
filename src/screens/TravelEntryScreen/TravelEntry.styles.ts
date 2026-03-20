@@ -73,7 +73,7 @@ export const TravelEntryScreenStyles = StyleSheet.create({
   button: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
