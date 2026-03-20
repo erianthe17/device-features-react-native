@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo } from 'react';
 
 export interface ThemeColors {
   background: string;
@@ -20,8 +20,8 @@ const lightColors: ThemeColors = {
   text: '#000000',
   card: '#F5F5F5',
   border: '#E0E0E0',
-  primary: '#2196F3',
-  secondary: '#FF6B6B',
+  primary: '#ffb2d6',
+  secondary: '#fc6497',
 };
 
 const darkColors: ThemeColors = {
@@ -29,8 +29,8 @@ const darkColors: ThemeColors = {
   text: '#FFFFFF',
   card: '#1E1E1E',
   border: '#333333',
-  primary: '#64B5F6',
-  secondary: '#FF8A80',
+  primary: '#ffb2d6',
+  secondary: '#fc6497',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -38,14 +38,22 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-  };
+  const toggleTheme = useCallback(() => {
+    setIsDark((currentValue) => !currentValue);
+  }, []);
 
   const colors = isDark ? darkColors : lightColors;
+  const value = useMemo(
+    () => ({
+      isDark,
+      colors,
+      toggleTheme,
+    }),
+    [colors, isDark, toggleTheme]
+  );
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

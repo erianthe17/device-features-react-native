@@ -45,7 +45,13 @@ const AppContent = () => {
     >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <TouchableOpacity
-          style={[styles.themeToggle, { backgroundColor: colors.primary }]}
+          style={[
+            styles.themeToggle,
+            {
+              backgroundColor: colors.secondary,
+              borderColor: colors.card,
+            },
+          ]}
           onPress={toggleTheme}
         >
           <MaterialIcons

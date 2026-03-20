@@ -56,10 +56,10 @@ export const TravelEntryCard: React.FC<TravelEntryCardProps> = ({
           {entry.address}
         </Text>
         <Text style={[styles.coordinatesText, { color: textColor }]}>
-          {entry.latitude.toFixed(4)}, {entry.longitude.toFixed(4)}
+          Coordinates: {entry.latitude.toFixed(4)}, {entry.longitude.toFixed(4)}
         </Text>
         <Text style={[styles.dateText, { color: textColor }]}>
-          {new Date(entry.timestamp).toLocaleDateString()} {new Date(entry.timestamp).toLocaleTimeString()}
+          Date Added: {new Date(entry.timestamp).toLocaleDateString()} {new Date(entry.timestamp).toLocaleTimeString()}
         </Text>
       </View>
     </Pressable>

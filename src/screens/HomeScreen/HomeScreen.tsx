@@ -4,34 +4,20 @@ import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
 import { getAllTravelEntries, deleteTravelEntry } from '../../utils/storageUtils';
+import { sendNotification } from '../../utils/notificationUtils';
 import { TravelEntry } from '../../types';
 import { TravelEntryCard } from '../../components/TravelEntryCard/TravelEntryCard';
 import { FeedbackModal } from '../../components/Modal/Modal';
 import { HomeScreenStyles as styles } from './HomeScreen.styles';
 import { HomeScreenProps } from '../../navigation/props';
+import { createDefaultModalState, FeedbackModalState } from '../../utils/modalUtils';
 
-interface ModalState {
-  visible: boolean;
-  title: string;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  onConfirm?: () => void;
-  confirmText?: string;
-  closeText?: string;
-}
-
-export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
-  const defaultModalState: ModalState = {
-    visible: false,
-    title: '',
-    message: '',
-    type: 'info',
-  };
+export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { colors } = useTheme();
   const [entries, setEntries] = useState<TravelEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [modal, setModal] = useState<ModalState>(defaultModalState);
+  const [modal, setModal] = useState<FeedbackModalState>(createDefaultModalState);
 
   React.useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -42,19 +28,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => 
   useFocusEffect(
     React.useCallback(() => {
       loadEntries();
-
-      const feedback = route.params?.feedback;
-      if (feedback) {
-        setModal({
-          visible: true,
-          title: feedback.title,
-          message: feedback.message,
-          type: feedback.type,
-          confirmText: 'OK',
-        });
-        navigation.setParams({ feedback: undefined });
-      }
-    }, [navigation, route.params?.feedback])
+    }, [])
   );
 
   const loadEntries = async () => {
@@ -78,7 +52,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => 
   };
 
   const closeModal = () => {
-    setModal(defaultModalState);
+    setModal(createDefaultModalState());
   };
 
   const handleDeleteEntry = (entryId: string) => {
@@ -95,13 +69,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => 
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           setEntries((currentEntries) => currentEntries.filter((entry) => entry.id !== entryId));
           await deleteTravelEntry(entryId);
-          setModal({
-            visible: true,
-            title: 'Success',
-            message: 'Entry deleted successfully',
-            type: 'success',
-            confirmText: 'OK',
-          });
+          await sendNotification('Entry Deleted', 'Travel entry deleted successfully');
         } catch (error) {
           await loadEntries();
           setModal({

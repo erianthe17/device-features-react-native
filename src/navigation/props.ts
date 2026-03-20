@@ -1,15 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 export type RootStackParamList = {
-  HomeList:
-    | {
-        feedback?: {
-          title: string;
-          message: string;
-          type: 'success' | 'error' | 'warning' | 'info';
-        };
-      }
-    | undefined;
+  HomeList: undefined;
   AddEntry: { onSuccess?: () => void };
   ViewEntry: { entryId: string };
 };

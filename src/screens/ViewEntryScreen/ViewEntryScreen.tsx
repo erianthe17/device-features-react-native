@@ -1,43 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, Image, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
 import { getAllTravelEntries, deleteTravelEntry } from '../../utils/storageUtils';
+import { sendNotification } from '../../utils/notificationUtils';
 import { FeedbackModal } from '../../components/Modal/Modal';
 import { TravelEntry } from '../../types';
 import { ViewEntryScreenStyles as styles } from './ViewEntryScreen.styles';
 import { ViewEntryScreenProps } from '../../navigation/props';
-
-interface ModalState {
-  visible: boolean;
-  title: string;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  onConfirm?: () => void;
-  confirmText?: string;
-  closeText?: string;
-}
+import { createDefaultModalState, FeedbackModalState } from '../../utils/modalUtils';
 
 export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, route }) => {
-  const defaultModalState: ModalState = {
-    visible: false,
-    title: '',
-    message: '',
-    type: 'info',
-  };
   const { colors } = useTheme();
   const { entryId } = route.params;
   const [entry, setEntry] = useState<TravelEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [modal, setModal] = useState<ModalState>(defaultModalState);
+  const [modal, setModal] = useState<FeedbackModalState>(createDefaultModalState);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
@@ -81,7 +60,7 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
   };
 
   const closeModal = () => {
-    setModal(defaultModalState);
+    setModal(createDefaultModalState());
   };
 
   const handleDeleteEntry = () => {
@@ -97,13 +76,8 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
           setIsDeleting(true);
           closeModal();
           await deleteTravelEntry(entryId);
-          navigation.navigate('HomeList', {
-            feedback: {
-              title: 'Success',
-              message: 'Entry deleted successfully',
-              type: 'success',
-            },
-          });
+          await sendNotification('Entry Deleted', 'Travel entry deleted successfully');
+          navigation.navigate('HomeList');
         } catch (error) {
           console.error('Error deleting entry:', error);
           setModal({
@@ -166,8 +140,14 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
           </ScrollView>
         ) : null}
 
-        <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
-          <View style={[styles.detailCard, styles.fullWidthCard]}>
+        <View style={styles.detailsContainer}>
+          <View
+            style={[
+              styles.detailCard,
+              styles.fullWidthCard,
+              { borderColor: colors.border, backgroundColor: 'transparent' },
+            ]}
+          >
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
             <Text style={[styles.addressText, { color: colors.text }]}>
               {entry.address}
@@ -175,14 +155,24 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
           </View>
 
           <View style={styles.detailGrid}>
-            <View style={styles.detailCard}>
+            <View
+              style={[
+                styles.detailCard,
+                { borderColor: colors.border, backgroundColor: 'transparent' },
+              ]}
+            >
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Latitude</Text>
               <Text style={[styles.coordinateValue, { color: colors.primary }]}>
                 {entry.latitude.toFixed(6)}
               </Text>
             </View>
 
-            <View style={styles.detailCard}>
+            <View
+              style={[
+                styles.detailCard,
+                { borderColor: colors.border, backgroundColor: 'transparent' },
+              ]}
+            >
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Longitude</Text>
               <Text style={[styles.coordinateValue, { color: colors.primary }]}>
                 {entry.longitude.toFixed(6)}
@@ -190,7 +180,13 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
             </View>
           </View>
 
-          <View style={[styles.detailCard, styles.fullWidthCard]}>
+          <View
+            style={[
+              styles.detailCard,
+              styles.fullWidthCard,
+              { borderColor: colors.border, backgroundColor: 'transparent' },
+            ]}
+          >
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Date & Time
             </Text>
@@ -202,7 +198,7 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
         </View>
       </ScrollView>
 
-      <View style={styles.buttonFooter}>
+      <View style={[styles.buttonFooter, { borderTopColor: colors.border }]}>
         <Pressable
           style={[styles.deleteButton, { backgroundColor: colors.secondary }]}
           onPress={handleDeleteEntry}

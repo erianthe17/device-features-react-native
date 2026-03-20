@@ -12,24 +12,9 @@ import { FeedbackModal } from '../../components/Modal/Modal';
 import { TravelEntry } from '../../types';
 import { TravelEntryScreenStyles as styles } from './TravelEntry.styles';
 import { TravelEntryScreenProps } from '../../navigation/props';
-
-interface ModalState {
-  visible: boolean;
-  title: string;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  onConfirm?: () => void;
-  confirmText?: string;
-  closeText?: string;
-}
+import { createDefaultModalState, FeedbackModalState } from '../../utils/modalUtils';
 
 export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation, route }) => {
-  const defaultModalState: ModalState = {
-    visible: false,
-    title: '',
-    message: '',
-    type: 'info',
-  };
   const { colors } = useTheme();
   const [imageUris, setImageUris] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -38,7 +23,7 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [shouldNavigateHome, setShouldNavigateHome] = useState(false);
-  const [modal, setModal] = useState<ModalState>(defaultModalState);
+  const [modal, setModal] = useState<FeedbackModalState>(createDefaultModalState);
   const skipDiscardPromptRef = useRef(false);
   const hasUnsavedChanges = imageUris.length > 0 || address.trim().length > 0;
 
@@ -101,7 +86,7 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
   };
 
   const closeModal = () => {
-    setModal(defaultModalState);
+    setModal(createDefaultModalState());
   };
 
   const parseExifCoordinate = (value: unknown): number | null => {
@@ -328,21 +313,10 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
         'Travel Entry Saved',
         `Your travel entry has been saved: ${address}`
       );
-
-      setModal({
-        visible: true,
-        title: 'Success',
-        message: 'Travel entry saved successfully',
-        type: 'success',
-        confirmText: 'OK',
-        onConfirm: () => {
-          skipDiscardPromptRef.current = true;
-          clearForm();
-          closeModal();
-          route.params?.onSuccess?.();
-          setShouldNavigateHome(true);
-        },
-      });
+      skipDiscardPromptRef.current = true;
+      clearForm();
+      route.params?.onSuccess?.();
+      setShouldNavigateHome(true);
     } catch (error) {
       setModal({
         visible: true,
