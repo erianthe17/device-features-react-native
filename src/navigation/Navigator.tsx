@@ -37,6 +37,7 @@ export const RootNavigator = () => {
         options={{
           headerTitle: 'Add Travel Entry',
           headerShown: true,
+          headerBackButtonMenuEnabled: false,
         }}
       />
       <Stack.Screen

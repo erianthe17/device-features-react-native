@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Pressable, Image, ActivityIndicator, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { UNSTABLE_usePreventRemove as usePreventRemove } from '@react-navigation/core';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../context/ThemeContext';
 import { requestCameraPermission, requestMediaLibraryPermission } from '../../utils/cameraUtils';
@@ -39,39 +40,38 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [shouldNavigateHome, setShouldNavigateHome] = useState(false);
   const [modal, setModal] = useState<ModalState>(defaultModalState);
   const skipDiscardPromptRef = useRef(false);
+  const hasUnsavedChanges = imageUris.length > 0 || address.trim().length > 0;
 
   useEffect(() => {
     requestPermissions();
   }, []);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (skipDiscardPromptRef.current) {
-        return;
-      }
+    if (!shouldNavigateHome) {
+      return;
+    }
 
-      if (imageUris.length > 0 || address) {
-        e.preventDefault();
+    navigation.navigate('HomeList');
+  }, [navigation, shouldNavigateHome]);
 
-        setModal({
-          visible: true,
-          title: 'Discard Entry?',
-          message: 'You have unsaved changes. Do you want to discard them?',
-          type: 'warning',
-          confirmText: 'Discard',
-          closeText: 'Keep Editing',
-          onConfirm: () => {
-            clearForm();
-            navigation.dispatch(e.data.action);
-          },
-        });
-      }
+  usePreventRemove(hasUnsavedChanges && !skipDiscardPromptRef.current, ({ data }) => {
+    setModal({
+      visible: true,
+      title: 'Discard Entry?',
+      message: 'You have unsaved changes. Do you want to discard them?',
+      type: 'warning',
+      confirmText: 'Discard',
+      closeText: 'Keep Editing',
+      onConfirm: () => {
+        skipDiscardPromptRef.current = true;
+        clearForm();
+        navigation.dispatch(data.action);
+      },
     });
-
-    return unsubscribe;
-  }, [navigation, imageUris, address]);
+  });
 
   const requestPermissions = async () => {
     try {
@@ -341,8 +341,9 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
         onConfirm: () => {
           skipDiscardPromptRef.current = true;
           clearForm();
+          closeModal();
           route.params?.onSuccess?.();
-          navigation.navigate('HomeList');
+          setShouldNavigateHome(true);
         },
       });
     } catch (error) {

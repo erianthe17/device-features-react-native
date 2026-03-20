@@ -8,15 +8,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../context/ThemeContext';
 import { getAllTravelEntries, deleteTravelEntry } from '../../utils/storageUtils';
 import { FeedbackModal } from '../../components/Modal/Modal';
 import { TravelEntry } from '../../types';
 import { ViewEntryScreenStyles as styles } from './ViewEntryScreen.styles';
-import { RootStackParamList } from '../../navigation/props';
-
-type ViewEntryScreenProps = NativeStackScreenProps<RootStackParamList, 'ViewEntry'>;
+import { ViewEntryScreenProps } from '../../navigation/props';
 
 interface ModalState {
   visible: boolean;
@@ -98,14 +95,14 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
       onConfirm: async () => {
         try {
           setIsDeleting(true);
+          closeModal();
           await deleteTravelEntry(entryId);
-          setModal({
-            visible: true,
-            title: 'Success',
-            message: 'Entry deleted successfully',
-            type: 'success',
-            confirmText: 'OK',
-            onConfirm: () => navigation.goBack(),
+          navigation.navigate('HomeList', {
+            feedback: {
+              title: 'Success',
+              message: 'Entry deleted successfully',
+              type: 'success',
+            },
           });
         } catch (error) {
           console.error('Error deleting entry:', error);
@@ -170,34 +167,30 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
         ) : null}
 
         <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
-          <View style={styles.detailSection}>
+          <View style={[styles.detailCard, styles.fullWidthCard]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
             <Text style={[styles.addressText, { color: colors.text }]}>
               {entry.address}
             </Text>
           </View>
 
-          <View style={styles.detailSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Coordinates
-            </Text>
-            <View style={styles.coordinatesGrid}>
-              <View style={styles.coordinateItem}>
-                <Text style={[styles.coordinateLabel, { color: colors.text }]}>Latitude</Text>
-                <Text style={[styles.coordinateValue, { color: colors.primary }]}>
-                  {entry.latitude.toFixed(6)}
-                </Text>
-              </View>
-              <View style={styles.coordinateItem}>
-                <Text style={[styles.coordinateLabel, { color: colors.text }]}>Longitude</Text>
-                <Text style={[styles.coordinateValue, { color: colors.primary }]}>
-                  {entry.longitude.toFixed(6)}
-                </Text>
-              </View>
+          <View style={styles.detailGrid}>
+            <View style={styles.detailCard}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Latitude</Text>
+              <Text style={[styles.coordinateValue, { color: colors.primary }]}>
+                {entry.latitude.toFixed(6)}
+              </Text>
+            </View>
+
+            <View style={styles.detailCard}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Longitude</Text>
+              <Text style={[styles.coordinateValue, { color: colors.primary }]}>
+                {entry.longitude.toFixed(6)}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.detailSection}>
+          <View style={[styles.detailCard, styles.fullWidthCard]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Date & Time
             </Text>

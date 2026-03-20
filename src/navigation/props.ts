@@ -7,11 +7,22 @@ export type RootTabParamList = {
 };
 
 export type RootStackParamList = {
-  HomeList: undefined;
+  HomeList:
+    | {
+        feedback?: {
+          title: string;
+          message: string;
+          type: 'success' | 'error' | 'warning' | 'info';
+        };
+      }
+    | undefined;
   AddEntry: { onSuccess?: () => void };
   ViewEntry: { entryId: string };
 };
 
-export type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'HomeList'>;
-export type TravelEntryScreenProps = NativeStackScreenProps<RootStackParamList, 'AddEntry'>;
+export type Props<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
 export type RootTabScreenProps<T extends keyof RootTabParamList> = BottomTabScreenProps<RootTabParamList, T>;
+
+export type HomeScreenProps = Props<'HomeList'>;
+export type TravelEntryScreenProps = Props<'AddEntry'>;
+export type ViewEntryScreenProps = Props<'ViewEntry'>;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, Pressable, ActivityIndicator, RefreshControl, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
@@ -8,10 +8,7 @@ import { TravelEntry } from '../../types';
 import { TravelEntryCard } from '../../components/TravelEntryCard/TravelEntryCard';
 import { FeedbackModal } from '../../components/Modal/Modal';
 import { HomeScreenStyles as styles } from './HomeScreen.styles';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/props';
-
-type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'HomeList'>;
+import { HomeScreenProps } from '../../navigation/props';
 
 interface ModalState {
   visible: boolean;
@@ -23,7 +20,7 @@ interface ModalState {
   closeText?: string;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   const defaultModalState: ModalState = {
     visible: false,
     title: '',
@@ -37,10 +34,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [modal, setModal] = useState<ModalState>(defaultModalState);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
   useFocusEffect(
     React.useCallback(() => {
       loadEntries();
-    }, [])
+
+      const feedback = route.params?.feedback;
+      if (feedback) {
+        setModal({
+          visible: true,
+          title: feedback.title,
+          message: feedback.message,
+          type: feedback.type,
+          confirmText: 'OK',
+        });
+        navigation.setParams({ feedback: undefined });
+      }
+    }, [navigation, route.params?.feedback])
   );
 
   const loadEntries = async () => {
@@ -78,8 +93,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       closeText: 'Cancel',
       onConfirm: async () => {
         try {
+          closeModal();
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setEntries((currentEntries) => currentEntries.filter((entry) => entry.id !== entryId));
           await deleteTravelEntry(entryId);
-          await loadEntries();
           setModal({
             visible: true,
             title: 'Success',
@@ -89,6 +106,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           });
           setPendingDeleteId(null);
         } catch (error) {
+          await loadEntries();
           setModal({
             visible: true,
             title: 'Error',

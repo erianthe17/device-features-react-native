@@ -43,45 +43,46 @@ export const ViewEntryScreenStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 20,
     marginBottom: 20,
+    gap: 14,
   },
-  detailSection: {
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+  detailGrid: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  detailCard: {
+    flex: 1,
+    minHeight: 132,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E7E3DA',
+    backgroundColor: '#F8F5EE',
+    justifyContent: 'space-between',
+  },
+  fullWidthCard: {
+    width: '100%',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   addressText: {
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
   },
-  coordinatesGrid: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 8,
-  },
-  coordinateItem: {
-    flex: 1,
-    paddingVertical: 12,
-  },
-  coordinateLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
   coordinateValue: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'monospace',
   },
   dateText: {
     fontSize: 14,
     fontWeight: '500',
+    lineHeight: 22,
   },
   buttonFooter: {
     paddingHorizontal: 16,
