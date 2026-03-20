@@ -91,10 +91,11 @@ export const ViewEntryScreenStyles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
+    marginBottom: 8,
   },
   deleteButtonText: {
     color: '#FFFFFF',

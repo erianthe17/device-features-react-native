@@ -20,8 +20,8 @@ const lightColors: ThemeColors = {
   text: '#000000',
   card: '#F5F5F5',
   border: '#E0E0E0',
-  primary: '#ffb2d6',
-  secondary: '#fc6497',
+  primary: '#fc6497',
+  secondary: '#ffb2d6',
 };
 
 const darkColors: ThemeColors = {
@@ -29,8 +29,8 @@ const darkColors: ThemeColors = {
   text: '#FFFFFF',
   card: '#1E1E1E',
   border: '#333333',
-  primary: '#ffb2d6',
-  secondary: '#fc6497',
+  primary: '#fc6497',
+  secondary: '#ffb2d6',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

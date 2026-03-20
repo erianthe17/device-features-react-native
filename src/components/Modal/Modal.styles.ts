@@ -9,9 +9,7 @@ export const ModalStyles = StyleSheet.create({
   },
   container: {
     borderRadius: 12,
-    paddingTop: 0,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    padding: 20,
     minWidth: '80%',
     maxWidth: '90%',
     elevation: 5,
@@ -19,13 +17,6 @@ export const ModalStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-  },
-  headerBar: {
-    height: 4,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    marginHorizontal: -20,
-    marginBottom: 16,
   },
   title: {
     fontSize: 18,
