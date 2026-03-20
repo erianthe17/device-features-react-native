@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Pressable, Image, ActivityIndicator, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { UNSTABLE_usePreventRemove as usePreventRemove } from '@react-navigation/core';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../context/ThemeContext';
 import { requestCameraPermission, requestMediaLibraryPermission } from '../../utils/cameraUtils';
 import { requestLocationPermission, getCurrentLocation, reverseGeocode } from '../../utils/locationUtils';
@@ -12,9 +11,7 @@ import { validateTravelEntry } from '../../utils/validationUtils';
 import { FeedbackModal } from '../../components/Modal/Modal';
 import { TravelEntry } from '../../types';
 import { TravelEntryScreenStyles as styles } from './TravelEntry.styles';
-import { RootStackParamList } from '../../navigation/props';
-
-type TravelEntryScreenProps = NativeStackScreenProps<RootStackParamList, 'AddEntry'>;
+import { TravelEntryScreenProps } from '../../navigation/props';
 
 interface ModalState {
   visible: boolean;

@@ -32,7 +32,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => 
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modal, setModal] = useState<ModalState>(defaultModalState);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -83,7 +82,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => 
   };
 
   const handleDeleteEntry = (entryId: string) => {
-    setPendingDeleteId(entryId);
     setModal({
       visible: true,
       title: 'Delete Entry',
@@ -104,7 +102,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => 
             type: 'success',
             confirmText: 'OK',
           });
-          setPendingDeleteId(null);
         } catch (error) {
           await loadEntries();
           setModal({
@@ -115,8 +112,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => 
             confirmText: 'OK',
           });
           console.error('Error deleting entry:', error);
-        } finally {
-          setPendingDeleteId(null);
         }
       },
     });
