@@ -1,11 +1,11 @@
 export const validateTravelEntry = (
-  imageUri: string | null,
+  imageUris: string[],
   address: string,
   latitude: number | null,
   longitude: number | null
 ): { valid: boolean; error: string } => {
-  if (!imageUri) {
-    return { valid: false, error: 'Please take or select a photo' };
+  if (!Array.isArray(imageUris) || imageUris.length === 0) {
+    return { valid: false, error: 'Please take or select at least one photo' };
   }
 
   if (!address || address.trim().length === 0) {

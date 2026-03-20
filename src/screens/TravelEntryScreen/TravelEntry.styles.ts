@@ -8,8 +8,15 @@ export const TravelEntryScreenStyles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 14,
     marginBottom: 20,
     textAlign: 'center',
+    lineHeight: 20,
+    opacity: 0.7,
   },
   cameraContainer: {
     flex: 1,
@@ -36,6 +43,23 @@ export const TravelEntryScreenStyles = StyleSheet.create({
     height: 300,
     borderRadius: 10,
     marginBottom: 12,
+  },
+  thumbnailList: {
+    gap: 10,
+    paddingBottom: 12,
+  },
+  thumbnailButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   changeImageButton: {
     paddingHorizontal: 20,

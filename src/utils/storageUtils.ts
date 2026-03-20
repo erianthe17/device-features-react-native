@@ -3,10 +3,25 @@ import { TravelEntry } from '../types';
 
 const STORAGE_KEY = 'travel_entries';
 
+const normalizeTravelEntry = (entry: TravelEntry): TravelEntry => {
+  const imageUris =
+    Array.isArray(entry.imageUris) && entry.imageUris.length > 0
+      ? entry.imageUris.filter(Boolean)
+      : entry.imageUri
+        ? [entry.imageUri]
+        : [];
+
+  return {
+    ...entry,
+    imageUris,
+    imageUri: imageUris[0],
+  };
+};
+
 export const saveTravelEntry = async (entry: TravelEntry): Promise<void> => {
   try {
     const existingEntries = await getAllTravelEntries();
-    const updatedEntries = [entry, ...existingEntries];
+    const updatedEntries = [normalizeTravelEntry(entry), ...existingEntries];
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
   } catch (error) {
     console.error('Error saving travel entry:', error);
@@ -17,7 +32,11 @@ export const saveTravelEntry = async (entry: TravelEntry): Promise<void> => {
 export const getAllTravelEntries = async (): Promise<TravelEntry[]> => {
   try {
     const data = await AsyncStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) {
+      return [];
+    }
+
+    return JSON.parse(data).map(normalizeTravelEntry);
   } catch (error) {
     console.error('Error retrieving travel entries:', error);
     return [];

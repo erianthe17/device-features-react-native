@@ -1,12 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  Pressable,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, FlatList, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
@@ -31,16 +24,17 @@ interface ModalState {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const { colors } = useTheme();
-  const [entries, setEntries] = useState<TravelEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [modal, setModal] = useState<ModalState>({
+  const defaultModalState: ModalState = {
     visible: false,
     title: '',
     message: '',
     type: 'info',
-  });
+  };
+  const { colors } = useTheme();
+  const [entries, setEntries] = useState<TravelEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modal, setModal] = useState<ModalState>(defaultModalState);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useFocusEffect(
@@ -70,7 +64,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const closeModal = () => {
-    setModal({ ...modal, visible: false });
+    setModal(defaultModalState);
   };
 
   const handleDeleteEntry = (entryId: string) => {
@@ -103,6 +97,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             confirmText: 'OK',
           });
           console.error('Error deleting entry:', error);
+        } finally {
+          setPendingDeleteId(null);
         }
       },
     });

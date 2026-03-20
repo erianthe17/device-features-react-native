@@ -11,7 +11,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
@@ -80,7 +79,7 @@ const styles = StyleSheet.create({
   },
   themeToggle: {
     position: 'absolute',
-    top: 60,
+    top: 42,
     right: 16,
     width: 50,
     height: 50,

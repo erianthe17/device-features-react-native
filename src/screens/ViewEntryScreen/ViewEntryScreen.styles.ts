@@ -4,6 +4,9 @@ export const ViewEntryScreenStyles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    flex: 1,
+  },
   centerContent: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -18,10 +21,34 @@ export const ViewEntryScreenStyles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  thumbnailList: {
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  thumbnailButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
   detailsContainer: {
     paddingHorizontal: 16,
     paddingVertical: 20,
     marginBottom: 20,
+  },
+  detailSection: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   sectionTitle: {
     fontSize: 16,
@@ -56,13 +83,13 @@ export const ViewEntryScreenStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
+  buttonFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
   },
   deleteButton: {
-    flex: 1,
     flexDirection: 'row',
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -72,21 +99,6 @@ export const ViewEntryScreenStyles = StyleSheet.create({
     gap: 8,
   },
   deleteButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  backButton: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',

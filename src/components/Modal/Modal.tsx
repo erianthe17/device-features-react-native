@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from 'react-native';
+import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 
 interface ModalProps {
   visible: boolean;
@@ -29,7 +23,7 @@ export const FeedbackModal: React.FC<ModalProps> = ({
   onClose,
   onConfirm,
   confirmText = 'OK',
-  closeText = 'Cancel',
+  closeText,
   type = 'info',
   backgroundColor = '#FFFFFF',
   textColor = '#000000',
@@ -72,7 +66,7 @@ export const FeedbackModal: React.FC<ModalProps> = ({
           </Text>
 
           <View style={styles.buttonContainer}>
-            {onConfirm ? (
+            {onConfirm && closeText ? (
               <>
                 <Pressable
                   style={({ pressed }) => [
@@ -90,10 +84,7 @@ export const FeedbackModal: React.FC<ModalProps> = ({
                     styles.button,
                     { backgroundColor: typeColor, opacity: pressed ? 0.7 : 1 },
                   ]}
-                  onPress={() => {
-                    onConfirm();
-                    onClose?.();
-                  }}
+                  onPress={onConfirm}
                 >
                   <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
                     {confirmText}
@@ -106,7 +97,7 @@ export const FeedbackModal: React.FC<ModalProps> = ({
                   styles.button,
                   { backgroundColor: typeColor, opacity: pressed ? 0.7 : 1 },
                 ]}
-                onPress={onClose}
+                onPress={onConfirm || onClose}
               >
                 <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
                   {confirmText}

@@ -23,6 +23,8 @@ export const TravelEntryCard: React.FC<TravelEntryCardProps> = ({
   textColor,
   secondaryColor,
 }) => {
+  const coverImage = entry.imageUris[0] || entry.imageUri;
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -31,7 +33,24 @@ export const TravelEntryCard: React.FC<TravelEntryCardProps> = ({
       ]}
       onPress={() => onPress?.(entry.id)}
     >
-      <Image source={{ uri: entry.imageUri }} style={styles.image} />
+      <View style={styles.imageWrapper}>
+        {coverImage ? <Image source={{ uri: coverImage }} style={styles.image} /> : null}
+        {entry.imageUris.length > 1 ? (
+          <View style={styles.imageCountBadge}>
+            <MaterialIcons name="photo-library" size={14} color="#FFFFFF" />
+            <Text style={styles.imageCountText}>{entry.imageUris.length}</Text>
+          </View>
+        ) : null}
+        <Pressable
+          style={({ pressed }) => [
+            styles.deleteButton,
+            { backgroundColor: secondaryColor, opacity: pressed ? 0.7 : 1 },
+          ]}
+          onPress={() => onDelete(entry.id)}
+        >
+          <MaterialIcons name="delete-outline" size={20} color="#FFFFFF" />
+        </Pressable>
+      </View>
       <View style={styles.content}>
         <Text style={[styles.addressText, { color: textColor }]} numberOfLines={2}>
           {entry.address}
@@ -43,15 +62,6 @@ export const TravelEntryCard: React.FC<TravelEntryCardProps> = ({
           {new Date(entry.timestamp).toLocaleDateString()} {new Date(entry.timestamp).toLocaleTimeString()}
         </Text>
       </View>
-      <Pressable
-        style={({ pressed }) => [
-          styles.deleteButton,
-          { backgroundColor: secondaryColor, opacity: pressed ? 0.7 : 1 },
-        ]}
-        onPress={() => onDelete(entry.id)}
-      >
-        <MaterialIcons name="delete-outline" size={20} color="#FFFFFF" />
-      </Pressable>
     </Pressable>
   );
 };

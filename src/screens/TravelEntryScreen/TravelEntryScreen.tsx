@@ -1,25 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  Image,
-  ActivityIndicator,
-  ScrollView,
-} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Pressable, Image, ActivityIndicator, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../context/ThemeContext';
-import {
-  requestCameraPermission,
-  getCameraPermission,
-  requestMediaLibraryPermission,
-} from '../../utils/cameraUtils';
-import {
-  requestLocationPermission,
-  getCurrentLocation,
-  reverseGeocode,
-} from '../../utils/locationUtils';
+import { requestCameraPermission, requestMediaLibraryPermission } from '../../utils/cameraUtils';
+import { requestLocationPermission, getCurrentLocation, reverseGeocode } from '../../utils/locationUtils';
 import { sendNotification } from '../../utils/notificationUtils';
 import { saveTravelEntry } from '../../utils/storageUtils';
 import { validateTravelEntry } from '../../utils/validationUtils';
@@ -41,18 +26,21 @@ interface ModalState {
 }
 
 export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation, route }) => {
-  const { colors } = useTheme();
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [address, setAddress] = useState<string>('');
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [modal, setModal] = useState<ModalState>({
+  const defaultModalState: ModalState = {
     visible: false,
     title: '',
     message: '',
     type: 'info',
-  });
+  };
+  const { colors } = useTheme();
+  const [imageUris, setImageUris] = useState<string[]>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [address, setAddress] = useState<string>('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [modal, setModal] = useState<ModalState>(defaultModalState);
+  const skipDiscardPromptRef = useRef(false);
 
   useEffect(() => {
     requestPermissions();
@@ -60,12 +48,13 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      // If there's an image or data, show confirmation
-      if (imageUri || address) {
-        // Prevent default behavior of leaving the screen
+      if (skipDiscardPromptRef.current) {
+        return;
+      }
+
+      if (imageUris.length > 0 || address) {
         e.preventDefault();
-        
-        // Show confirmation modal
+
         setModal({
           visible: true,
           title: 'Discard Entry?',
@@ -82,7 +71,7 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
     });
 
     return unsubscribe;
-  }, [navigation, imageUri, address]);
+  }, [navigation, imageUris, address]);
 
   const requestPermissions = async () => {
     try {
@@ -115,7 +104,134 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
   };
 
   const closeModal = () => {
-    setModal({ ...modal, visible: false });
+    setModal(defaultModalState);
+  };
+
+  const parseExifCoordinate = (value: unknown): number | null => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const trimmedValue = value.trim();
+      const directValue = Number(trimmedValue);
+      if (Number.isFinite(directValue)) {
+        return directValue;
+      }
+
+      const parts = trimmedValue.split(',').map((part) => part.trim()).filter(Boolean);
+      if (parts.length > 0) {
+        const convertedParts = parts.map((part) => {
+          const [numerator, denominator] = part.split('/');
+          if (!denominator) {
+            const numericPart = Number(part);
+            return Number.isFinite(numericPart) ? numericPart : null;
+          }
+
+          const parsedNumerator = Number(numerator);
+          const parsedDenominator = Number(denominator);
+          if (!Number.isFinite(parsedNumerator) || !Number.isFinite(parsedDenominator) || parsedDenominator === 0) {
+            return null;
+          }
+
+          return parsedNumerator / parsedDenominator;
+        });
+
+        if (convertedParts.every((part) => part !== null)) {
+          const [degrees = 0, minutes = 0, seconds = 0] = convertedParts as number[];
+          return degrees + minutes / 60 + seconds / 3600;
+        }
+      }
+    }
+
+    if (Array.isArray(value) && value.length > 0) {
+      const convertedParts = value.map((part) => parseExifCoordinate(part));
+      if (convertedParts.every((part) => part !== null)) {
+        const [degrees = 0, minutes = 0, seconds = 0] = convertedParts as number[];
+        return degrees + minutes / 60 + seconds / 3600;
+      }
+    }
+
+    return null;
+  };
+
+  const getCoordinatesFromAsset = (asset: ImagePicker.ImagePickerAsset) => {
+    const exif = asset.exif;
+    if (!exif) {
+      return null;
+    }
+
+    const latitudeValue = parseExifCoordinate(exif.GPSLatitude ?? exif.latitude);
+    const longitudeValue = parseExifCoordinate(exif.GPSLongitude ?? exif.longitude);
+
+    if (latitudeValue === null || longitudeValue === null) {
+      return null;
+    }
+
+    const latitudeRef = typeof exif.GPSLatitudeRef === 'string' ? exif.GPSLatitudeRef.toUpperCase() : '';
+    const longitudeRef = typeof exif.GPSLongitudeRef === 'string' ? exif.GPSLongitudeRef.toUpperCase() : '';
+
+    return {
+      latitude: latitudeRef === 'S' ? -Math.abs(latitudeValue) : Math.abs(latitudeValue),
+      longitude: longitudeRef === 'W' ? -Math.abs(longitudeValue) : Math.abs(longitudeValue),
+    };
+  };
+
+  const mergeImageUris = (nextUris: string[], focusNewest = false) => {
+    setImageUris((currentUris) => {
+      const mergedUris = Array.from(new Set([...currentUris, ...nextUris.filter(Boolean)]));
+      if (focusNewest && mergedUris.length > currentUris.length) {
+        setSelectedImageIndex(currentUris.length);
+      } else if (currentUris.length === 0 && mergedUris.length > 0) {
+        setSelectedImageIndex(0);
+      }
+      return mergedUris;
+    });
+  };
+
+  const updateLocationForAssets = async (assets: ImagePicker.ImagePickerAsset[]) => {
+    setIsLoading(true);
+    try {
+      const assetCoordinates = assets
+        .map((asset) => getCoordinatesFromAsset(asset))
+        .find((coordinates) => coordinates !== null);
+      let latitudeValue = assetCoordinates?.latitude ?? null;
+      let longitudeValue = assetCoordinates?.longitude ?? null;
+
+      if (latitudeValue === null || longitudeValue === null) {
+        const currentLocation = await getCurrentLocation();
+        latitudeValue = currentLocation?.coords.latitude ?? null;
+        longitudeValue = currentLocation?.coords.longitude ?? null;
+      }
+
+      if (latitudeValue === null || longitudeValue === null) {
+        setModal({
+          visible: true,
+          title: 'Location Unavailable',
+          message: 'We could not read location data from the selected photos or your current device location.',
+          type: 'warning',
+          confirmText: 'OK',
+        });
+        return;
+      }
+
+      setLatitude(latitudeValue);
+      setLongitude(longitudeValue);
+
+      const addressResult = await reverseGeocode(latitudeValue, longitudeValue);
+      setAddress(addressResult || `${latitudeValue.toFixed(4)}, ${longitudeValue.toFixed(4)}`);
+    } catch (error) {
+      setModal({
+        visible: true,
+        title: 'Error',
+        message: 'Failed to get location',
+        type: 'error',
+        confirmText: 'OK',
+      });
+      console.error('Error getting location:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTakePhoto = async () => {
@@ -124,11 +240,12 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
         allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
+        exif: true,
       });
 
-      if (!result.canceled) {
-        setImageUri(result.assets[0].uri);
-        await getLocationAndAddress();
+      if (!result.canceled && result.assets.length > 0) {
+        mergeImageUris(result.assets.map((asset) => asset.uri), true);
+        await updateLocationForAssets(result.assets);
       }
     } catch (error) {
       setModal({
@@ -160,14 +277,16 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
+        allowsMultipleSelection: true,
+        orderedSelection: true,
+        selectionLimit: 0,
         quality: 1,
+        exif: true,
       });
 
-      if (!result.canceled) {
-        setImageUri(result.assets[0].uri);
-        await getLocationAndAddress();
+      if (!result.canceled && result.assets.length > 0) {
+        mergeImageUris(result.assets.map((asset) => asset.uri), true);
+        await updateLocationForAssets(result.assets);
       }
     } catch (error) {
       setModal({
@@ -181,42 +300,8 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
     }
   };
 
-  const getLocationAndAddress = async () => {
-    setIsLoading(true);
-    try {
-      const location = await getCurrentLocation();
-      if (location) {
-        const { latitude: lat, longitude: lng } = location.coords;
-        setLatitude(lat);
-        setLongitude(lng);
-
-        const addressResult = await reverseGeocode(lat, lng);
-        setAddress(addressResult || 'Address not found');
-      } else {
-        setModal({
-          visible: true,
-          title: 'Error',
-          message: 'Could not retrieve location',
-          type: 'error',
-          confirmText: 'OK',
-        });
-      }
-    } catch (error) {
-      setModal({
-        visible: true,
-        title: 'Error',
-        message: 'Failed to get location',
-        type: 'error',
-        confirmText: 'OK',
-      });
-      console.error('Error getting location:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSaveEntry = async () => {
-    const validation = validateTravelEntry(imageUri, address, latitude, longitude);
+    const validation = validateTravelEntry(imageUris, address, latitude, longitude);
 
     if (!validation.valid) {
       setModal({
@@ -233,7 +318,8 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
     try {
       const newEntry: TravelEntry = {
         id: Date.now().toString(),
-        imageUri: imageUri!,
+        imageUri: imageUris[0],
+        imageUris,
         address,
         latitude: latitude!,
         longitude: longitude!,
@@ -253,12 +339,9 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
         type: 'success',
         confirmText: 'OK',
         onConfirm: () => {
+          skipDiscardPromptRef.current = true;
           clearForm();
-          // Call onSuccess callback if provided
-          if (route.params?.onSuccess) {
-            route.params.onSuccess();
-          }
-          // Navigate back to home
+          route.params?.onSuccess?.();
           navigation.navigate('HomeList');
         },
       });
@@ -281,32 +364,56 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
   };
 
   const clearForm = () => {
-    setImageUri(null);
+    setImageUris([]);
+    setSelectedImageIndex(0);
     setAddress('');
     setLatitude(null);
     setLongitude(null);
   };
 
+  const selectedImageUri = imageUris[selectedImageIndex] || imageUris[0];
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.title, { color: colors.text }]}>Add Travel Entry</Text>
+      <Text style={[styles.description, { color: colors.text }]}>
+        Capture a photo of your travel location and we'll automatically get the address for you
+      </Text>
 
-      {imageUri && (
+      {imageUris.length > 0 && (
         <View style={styles.imageContainer}>
-          <Image source={{ uri: imageUri }} style={styles.image} />
+          {selectedImageUri ? <Image source={{ uri: selectedImageUri }} style={styles.image} /> : null}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.thumbnailList}
+          >
+            {imageUris.map((uri, index) => (
+              <Pressable
+                key={`${uri}-${index}`}
+                style={[
+                  styles.thumbnailButton,
+                  index === selectedImageIndex && { borderColor: colors.primary },
+                ]}
+                onPress={() => setSelectedImageIndex(index)}
+              >
+                <Image source={{ uri }} style={styles.thumbnailImage} />
+              </Pressable>
+            ))}
+          </ScrollView>
           <Pressable
             style={({ pressed }) => [
               styles.changeImageButton,
               { backgroundColor: colors.secondary, opacity: pressed ? 0.8 : 1 },
             ]}
-            onPress={() => setImageUri(null)}
+            onPress={handlePickImage}
           >
-            <Text style={styles.buttonText}>Change Photo</Text>
+            <Text style={styles.buttonText}>Add More Photos</Text>
           </Pressable>
         </View>
       )}
 
-      {!imageUri && (
+      {imageUris.length === 0 && (
         <View style={styles.imageActionsContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -329,7 +436,7 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
         </View>
       )}
 
-      {imageUri && (
+      {imageUris.length > 0 && (
         <View style={[styles.infoContainer, { backgroundColor: colors.card }]}>
           {isLoading ? (
             <ActivityIndicator size="large" color={colors.primary} />
@@ -352,7 +459,7 @@ export const TravelEntryScreen: React.FC<TravelEntryScreenProps> = ({ navigation
         </View>
       )}
 
-      {imageUri && (
+      {imageUris.length > 0 && (
         <View style={styles.saveContainer}>
           <Pressable
             style={({ pressed }) => [

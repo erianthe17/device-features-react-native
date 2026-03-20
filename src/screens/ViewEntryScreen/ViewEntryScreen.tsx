@@ -4,7 +4,6 @@ import {
   Text,
   Image,
   ScrollView,
-  Alert,
   Pressable,
   ActivityIndicator,
 } from 'react-native';
@@ -12,22 +11,45 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../context/ThemeContext';
 import { getAllTravelEntries, deleteTravelEntry } from '../../utils/storageUtils';
+import { FeedbackModal } from '../../components/Modal/Modal';
 import { TravelEntry } from '../../types';
 import { ViewEntryScreenStyles as styles } from './ViewEntryScreen.styles';
 import { RootStackParamList } from '../../navigation/props';
 
 type ViewEntryScreenProps = NativeStackScreenProps<RootStackParamList, 'ViewEntry'>;
 
+interface ModalState {
+  visible: boolean;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  onConfirm?: () => void;
+  confirmText?: string;
+  closeText?: string;
+}
+
 export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, route }) => {
+  const defaultModalState: ModalState = {
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info',
+  };
   const { colors } = useTheme();
   const { entryId } = route.params;
   const [entry, setEntry] = useState<TravelEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [modal, setModal] = useState<ModalState>(defaultModalState);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     loadEntry();
   }, [entryId]);
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [entry?.id]);
 
   const loadEntry = async () => {
     try {
@@ -37,42 +59,68 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
       if (foundEntry) {
         setEntry(foundEntry);
       } else {
-        Alert.alert('Error', 'Entry not found');
-        navigation.goBack();
+        setModal({
+          visible: true,
+          title: 'Error',
+          message: 'Entry not found',
+          type: 'error',
+          confirmText: 'OK',
+          onConfirm: () => navigation.goBack(),
+        });
       }
     } catch (error) {
       console.error('Error loading entry:', error);
-      Alert.alert('Error', 'Failed to load entry');
-      navigation.goBack();
+      setModal({
+        visible: true,
+        title: 'Error',
+        message: 'Failed to load entry',
+        type: 'error',
+        confirmText: 'OK',
+        onConfirm: () => navigation.goBack(),
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const closeModal = () => {
+    setModal(defaultModalState);
+  };
+
   const handleDeleteEntry = () => {
-    Alert.alert('Delete Entry', 'Are you sure you want to delete this entry?', [
-      { text: 'Cancel', onPress: () => {} },
-      {
-        text: 'Delete',
-        onPress: async () => {
-          try {
-            setIsDeleting(true);
-            await deleteTravelEntry(entryId);
-            Alert.alert('Success', 'Entry deleted successfully', [
-              {
-                text: 'OK',
-                onPress: () => navigation.goBack(),
-              },
-            ]);
-          } catch (error) {
-            console.error('Error deleting entry:', error);
-            Alert.alert('Error', 'Failed to delete entry');
-          } finally {
-            setIsDeleting(false);
-          }
-        },
+    setModal({
+      visible: true,
+      title: 'Delete Entry',
+      message: 'Are you sure you want to delete this entry?',
+      type: 'warning',
+      confirmText: 'Delete',
+      closeText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          setIsDeleting(true);
+          await deleteTravelEntry(entryId);
+          setModal({
+            visible: true,
+            title: 'Success',
+            message: 'Entry deleted successfully',
+            type: 'success',
+            confirmText: 'OK',
+            onConfirm: () => navigation.goBack(),
+          });
+        } catch (error) {
+          console.error('Error deleting entry:', error);
+          setModal({
+            visible: true,
+            title: 'Error',
+            message: 'Failed to delete entry',
+            type: 'error',
+            confirmText: 'OK',
+          });
+        } finally {
+          setIsDeleting(false);
+        }
       },
-    ]);
+    });
   };
 
   if (isLoading) {
@@ -91,70 +139,107 @@ export const ViewEntryScreen: React.FC<ViewEntryScreenProps> = ({ navigation, ro
     );
   }
 
+  const imageUris = entry.imageUris.length > 0 ? entry.imageUris : entry.imageUri ? [entry.imageUri] : [];
+  const selectedImageUri = imageUris[selectedImageIndex] || imageUris[0];
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: entry.imageUri }} style={styles.image} />
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView style={styles.scrollContent}>
+        <View style={styles.imageContainer}>
+          {selectedImageUri ? <Image source={{ uri: selectedImageUri }} style={styles.image} /> : null}
+        </View>
+        {imageUris.length > 1 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.thumbnailList}
+          >
+            {imageUris.map((imageUri, index) => (
+              <Pressable
+                key={`${imageUri}-${index}`}
+                style={[
+                  styles.thumbnailButton,
+                  index === selectedImageIndex && { borderColor: colors.primary },
+                ]}
+                onPress={() => setSelectedImageIndex(index)}
+              >
+                <Image source={{ uri: imageUri }} style={styles.thumbnailImage} />
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : null}
 
-      <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
-        <Text style={[styles.addressText, { color: colors.text }]}>
-          {entry.address}
-        </Text>
-
-        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 16 }]}>
-          Coordinates
-        </Text>
-        <View style={styles.coordinatesGrid}>
-          <View style={styles.coordinateItem}>
-            <Text style={[styles.coordinateLabel, { color: colors.text }]}>Latitude</Text>
-            <Text style={[styles.coordinateValue, { color: colors.primary }]}>
-              {entry.latitude.toFixed(6)}
+        <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
+          <View style={styles.detailSection}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
+            <Text style={[styles.addressText, { color: colors.text }]}>
+              {entry.address}
             </Text>
           </View>
-          <View style={styles.coordinateItem}>
-            <Text style={[styles.coordinateLabel, { color: colors.text }]}>Longitude</Text>
-            <Text style={[styles.coordinateValue, { color: colors.primary }]}>
-              {entry.longitude.toFixed(6)}
+
+          <View style={styles.detailSection}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Coordinates
+            </Text>
+            <View style={styles.coordinatesGrid}>
+              <View style={styles.coordinateItem}>
+                <Text style={[styles.coordinateLabel, { color: colors.text }]}>Latitude</Text>
+                <Text style={[styles.coordinateValue, { color: colors.primary }]}>
+                  {entry.latitude.toFixed(6)}
+                </Text>
+              </View>
+              <View style={styles.coordinateItem}>
+                <Text style={[styles.coordinateLabel, { color: colors.text }]}>Longitude</Text>
+                <Text style={[styles.coordinateValue, { color: colors.primary }]}>
+                  {entry.longitude.toFixed(6)}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.detailSection}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Date & Time
+            </Text>
+            <Text style={[styles.dateText, { color: colors.text }]}>
+              {new Date(entry.timestamp).toLocaleDateString()} at{' '}
+              {new Date(entry.timestamp).toLocaleTimeString()}
             </Text>
           </View>
         </View>
+      </ScrollView>
 
-        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 16 }]}>
-          Date & Time
-        </Text>
-        <Text style={[styles.dateText, { color: colors.text }]}>
-          {new Date(entry.timestamp).toLocaleDateString()} at{' '}
-          {new Date(entry.timestamp).toLocaleTimeString()}
-        </Text>
-
-        <View style={styles.buttonContainer}>
-          <Pressable
-            style={[styles.deleteButton, { backgroundColor: colors.secondary }]}
-            onPress={handleDeleteEntry}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <MaterialIcons name="delete-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.deleteButtonText}>Delete Entry</Text>
-              </>
-            )}
-          </Pressable>
-
-          <Pressable
-            style={[styles.backButton, { backgroundColor: colors.primary }]}
-            onPress={() => navigation.goBack()}
-            disabled={isDeleting}
-          >
-            <MaterialIcons name="arrow-back" size={20} color="#FFFFFF" />
-            <Text style={styles.backButtonText}>Back</Text>
-          </Pressable>
-        </View>
+      <View style={styles.buttonFooter}>
+        <Pressable
+          style={[styles.deleteButton, { backgroundColor: colors.secondary }]}
+          onPress={handleDeleteEntry}
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <MaterialIcons name="delete-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.deleteButtonText}>Delete Entry</Text>
+            </>
+          )}
+        </Pressable>
       </View>
-    </ScrollView>
+
+      <FeedbackModal
+        visible={modal.visible}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        onClose={closeModal}
+        onConfirm={modal.onConfirm}
+        confirmText={modal.confirmText || 'OK'}
+        closeText={modal.closeText}
+        backgroundColor={colors.card}
+        textColor={colors.text}
+        primaryColor={colors.primary}
+        secondaryColor={colors.secondary}
+      />
+    </View>
   );
 };
